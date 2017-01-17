@@ -9,7 +9,7 @@ import urllib2
 import time
 import datetime
 import random
-
+from utils.encrypt import md5
 _queue = Queue(1000000)
 _size = 0
 _url_max_num = 0
@@ -47,20 +47,20 @@ def spider_join():
 def urllib2_get_httpproxy(ip, port):
     proxy = urllib2.ProxyHandler({'http': 'http://%s:%s' % (ip, port)})
     opener = urllib2.build_opener(proxy)
-    return opener
+    return opener,"http",ip,port
 
 
 def urllib2_get_httpsproxy(ip, port):
     proxy = urllib2.ProxyHandler({'https': 'https://%s:%s' % (ip, port)})
     opener = urllib2.build_opener(proxy)
-    return opener
+    return opener,"https",ip,port
+
 
 
 class Spider(object):
     _url_buff = set()
-
     def __init__(self, url, code=None, data=None, request_handle=None, response_handle=None, timeout=3, retry_times=30,
-                 retry_delta=3, proxy=False, with_responseheader=False):
+                 retry_delta=3, proxy=False, with_responseheader=False,force=False):
         '''
             url   目标url
             data   post的数据
@@ -71,8 +71,25 @@ class Spider(object):
         '''
 
         global _queue
-        if url not in Spider._url_buff and len(Spider._url_buff) < _url_max_num:
-            Spider._url_buff.add(url)
+        if data:
+            _hash=md5(url)+md5(data)
+        else:
+            _hash=md5(url)
+        if not force:
+            if _hash not in Spider._url_buff and len(Spider._url_buff) < _url_max_num:
+                Spider._url_buff.add(_hash)
+                self.url = url
+                self.data = data
+                self.timeout = timeout
+                self.retry_times = retry_times
+                self.retry_delta = retry_delta
+                self.response_handle = response_handle
+                self.code = code
+                self.request_handle = request_handle
+                self.proxy = proxy
+                self.with_responseheader = with_responseheader
+                _queue.put(self._go)
+        else:
             self.url = url
             self.data = data
             self.timeout = timeout
@@ -94,7 +111,7 @@ class Spider(object):
         for i in range(0, retry_times):
             try:
                 if self.proxy:
-                    urllib2.install_opener(random.sample(_proxy_list, 1)[0])
+                    urllib2.install_opener(random.sample([_[0] for _ in _proxy_list], 1)[0])
                 request = urllib2.Request(url)
                 if self.request_handle:
                     request.headers = self.request_handle(request.headers)
