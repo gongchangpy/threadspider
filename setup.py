@@ -6,7 +6,7 @@ __author__ = 'admin'
 from setuptools import  setup,find_packages
 setup(
     name="threadspider",
-    packages=["threadspider"],
-    version='0.1.1',
+    packages=["threadspider","threadspider.utils"],
+    version='0.1.2',
     install_requires=["setuptools"],
 )

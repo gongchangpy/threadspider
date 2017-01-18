@@ -18,7 +18,7 @@ _size = 0
 _url_max_num = 0
 _proxy_list = []
 
-def spider_init(poolsize, url_maxnum, proxy_list=None):
+def wk_spider_init(poolsize, url_maxnum, proxy_list=None):
     print datetime.datetime.now(), "[Spider]:init...."
     global _size, _queue, _url_max_num, _proxy_list
     if proxy_list:
@@ -42,10 +42,9 @@ def spider_init(poolsize, url_maxnum, proxy_list=None):
         run()
 
 
-def spider_join():
+def wk_spider_join():
     global _queue
     _queue.join()
-
 
 
 
@@ -63,7 +62,6 @@ class WkSpider(object):
             retry_delta   重试间隔
             handle        结果处理函数
         '''
-        import  spynner
         global _queue
         _hash=md5(url)
         if not force:
@@ -92,16 +90,7 @@ class WkSpider(object):
             except Exception as e :
                 print datetime.datetime.now(), "[WkSpider]:%s Exception:%s" % (self.url, e)
                 time.sleep(self.retry_delta)
-                # try:
-                #     _.close()
-                # except:
-                #     pass
             else:
                 print datetime.datetime.now(), "[WkSpider]:%s Success!" % self.url
-                # try:
-                #     _.close()
-                # except:
-                #     pass
-
                 break
 
