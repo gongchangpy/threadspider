@@ -15,7 +15,7 @@ from selenium.webdriver.support.select import Select
 mgr=MySQLMgr("192.168.8.94",3306,"shuili","root","gc895316")
 lock=Lock()
 
-spider_init(2,1000000)
+wk_spider_init(2,1000000)
 for i in range(1,493):
     def handle(web,pagenum=i):
         time.sleep(2)
@@ -39,7 +39,7 @@ for i in range(1,493):
             from_url=PyQuery(PyQuery(j).find("a")[0]).attr("href")
             from_url="http://kns.cnki.net"+from_url
             lock.acquire()
-            for a,b,c,d,e,f in [PyQuery(j).find("td")[1:-2]]:
+            for a,b,c,d,_s,e,f in [PyQuery(j).find("td")[1:-2]]:
                 title="".join([PyQuery(_).text() for _ in   PyQuery(a).find("a")]).replace(" ","")
                 author=PyQuery(b).text()
                 source=PyQuery(c).text().strip()
@@ -48,7 +48,7 @@ for i in range(1,493):
                     publist_date=publist_date.replace("/","-")
                 else:
                     publist_date=""
-                from_database="期刊"
+                from_database=PyQuery(_s).text().strip()
                 quote_times=PyQuery(e).find("a").text().strip()
                 download_times=PyQuery(PyQuery(f).find("a")[-1]).text().strip()
 
@@ -62,11 +62,11 @@ for i in range(1,493):
                     download_times=0
                 print title,author,source,"#",publist_date,"#",from_database,quote_times,download_times,from_url
 
-                mgr.runOperation('''replace  into zhiwang_article_shuishabianhua_qikan_1( title, author, source, publist_date, source_database,
+                mgr.runOperation('''replace  into zhiwang_article_shuishabianhua_wenxian( title, author, source, publist_date, source_database,
                                    quote_times, download_times, from_url)  VALUES (%s,%s,%s,%s,%s,%s,%s,%s)''',
                                  (title,author,source,publist_date,from_database,quote_times,download_times,from_url))
             lock.release()
         web.delete_all_cookies()
 
-    WkSpider("http://kns.cnki.net/kns/brief/result.aspx?dbprefix=CJFQ",handle=handle,force=True)
-spider_join()
+    WkSpider("http://kns.cnki.net/kns/brief/result.aspx?dbprefix=SCDB",handle=handle,force=True)
+wk_spider_join()
