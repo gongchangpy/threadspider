@@ -11,7 +11,8 @@ import datetime
 import random
 from utils.encrypt import  md5
 from selenium import  webdriver
-
+import  os
+import psutil
 
 _queue = Queue(1000000)
 _size = 0
@@ -45,6 +46,11 @@ def wk_spider_init(poolsize, url_maxnum, proxy_list=None):
 def wk_spider_join():
     global _queue
     _queue.join()
+    self_pid=os.getpid()
+    process=psutil.Process(pid=self_pid)
+    for _ in process.children():
+        if _.name()=="phantomjs":
+            _.kill()
 
 
 
