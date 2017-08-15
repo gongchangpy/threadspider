@@ -33,8 +33,8 @@ class MySQLMgr(object):
                                charset="utf8")
         cursor = conn.cursor()
         rows = cursor.execute(sql, args)
-        cursor.close()
         conn.commit()
+        cursor.close()
         conn.close()
         if withpaimarykey == True:
             return int(rows), int(cursor.lastrowid)
