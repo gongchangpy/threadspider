@@ -21,7 +21,7 @@ import urlparse
 _queue = Queue(1000000)
 _size = 0
 _proxy_list = []
-
+webdriver_list = []
 
 def phantomjs_spider_init(poolsize, proxy_list=None):
     print datetime.datetime.now(), "[PhantomJSSpider]:init...."
@@ -34,6 +34,7 @@ def phantomjs_spider_init(poolsize, proxy_list=None):
         def run():
             for i in range(0, _size):
                 _ = webdriver.PhantomJS()
+                webdriver_list.append(_)
                 def work(_=_):
                     while 1:
                         fun = _queue.get()
@@ -51,6 +52,8 @@ def phantomjs_spider_init(poolsize, proxy_list=None):
 def phantomjs_spider_join():
     global _queue
     _queue.join()
+    for i in webdriver_list:
+        i.quit()
     self_pid = os.getpid()
     process = psutil.Process(pid=self_pid)
     for _ in process.children():
