@@ -17,8 +17,9 @@ from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 from selenium.webdriver.common.proxy import Proxy
 from selenium.webdriver.common.proxy import ProxyType
 import urlparse
+from pybloom import ScalableBloomFilter,BloomFilter
 
-_queue = Queue(1000000)
+_queue = Queue()
 _size = 0
 webdriver_list = []
 
@@ -59,7 +60,7 @@ def phantomjs_spider_join():
 
 
 class PhantomjsSpider(object):
-    _url_buff = set()
+    _url_buff = None
     def __init__(self, url, charset=None,headers=None, response_handle=None, timeout=3, retry_times=30, load_wait=None,
                  execute_js=None, execute_js_wait=None,
                  retry_delta=3, http_proxy_url=None, force=False):
@@ -78,6 +79,8 @@ class PhantomjsSpider(object):
             http_proxy_url         代理ip,  "http://192.168.1.1:80"
             force         强制爬取,而不管有没有爬取过.
         '''
+        if not PhantomjsSpider._url_buff:
+            PhantomjsSpider._url_buff = [BloomFilter(1000000)]
         global _queue
         _hash = md5(url)
         self.url = url
@@ -92,8 +95,17 @@ class PhantomjsSpider(object):
         self.load_wait = load_wait
         self.proxy = http_proxy_url
         if not force:
-            if _hash not in PhantomjsSpider._url_buff:
-                PhantomjsSpider._url_buff.add(_hash)
+            try:
+                for bloomfilter in PhantomjsSpider._url_buff:
+                    assert _hash not in bloomfilter
+            except:
+                pass
+            else:
+                try:
+                    PhantomjsSpider._url_buff[-1].add(_hash)
+                except:
+                    PhantomjsSpider._url_buff.append(BloomFilter(PhantomjsSpider._url_buff[-1].capacity+1000000))
+                    PhantomjsSpider._url_buff[-1].add(_hash)
                 _queue.put(self._go)
         else:
             _queue.put(self._go)

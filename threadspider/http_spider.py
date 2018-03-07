@@ -8,11 +8,11 @@ from threading import Thread
 import urllib2
 import time
 import datetime
-import random
 from utils.encrypt import md5
 import  urlparse
+from pybloom import  BloomFilter,ScalableBloomFilter
 
-_queue = Queue(1000000)
+_queue = Queue()
 _size = 0
 
 
@@ -56,7 +56,7 @@ def urllib2_get_httpsproxy(ip, port):
 
 
 class Spider(object):
-    _url_buff = set()
+    _url_buff = None
 
     def __init__(self, url, charset=None, data=None, headers=None, response_handle=None, timeout=3, retry_times=30,
                  retry_delta=3, http_proxy_url=None, force=False):
@@ -72,35 +72,36 @@ class Spider(object):
             http_proxy_url         代理ip,  "http://192.168.1.1:80"
             force         强制爬取,而不管有没有爬取过.
         '''
-
+        self.url = url
+        self.data = data
+        self.timeout = timeout
+        self.retry_times = retry_times
+        self.retry_delta = retry_delta
+        self.response_handle = response_handle
+        self.charset = charset
+        self.headers = headers
+        self.proxy = http_proxy_url
+        if not Spider._url_buff:
+            Spider._url_buff = [BloomFilter(1000000)]
         global _queue
         if data:
             _hash = md5(url) + md5(data)
         else:
             _hash = md5(url)
         if not force:
-            if _hash not in Spider._url_buff:
-                Spider._url_buff.add(_hash)
-                self.url = url
-                self.data = data
-                self.timeout = timeout
-                self.retry_times = retry_times
-                self.retry_delta = retry_delta
-                self.response_handle = response_handle
-                self.charset = charset
-                self.headers = headers
-                self.proxy = http_proxy_url
+            try:
+                for bloomfilter in Spider._url_buff:
+                    assert  _hash not in bloomfilter
+            except:
+                pass
+            else:
+                try:
+                    Spider._url_buff[-1].add(_hash)
+                except:
+                    Spider._url_buff.append(BloomFilter(Spider._url_buff[-1].capacity+1000000))
+                    Spider._url_buff[-1].add(_hash)
                 _queue.put(self._go)
         else:
-            self.url = url
-            self.data = data
-            self.timeout = timeout
-            self.retry_times = retry_times
-            self.retry_delta = retry_delta
-            self.response_handle = response_handle
-            self.charset = charset
-            self.headers = headers
-            self.proxy = http_proxy_url
             _queue.put(self._go)
 
     def _go(self):
