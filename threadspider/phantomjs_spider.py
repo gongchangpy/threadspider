@@ -20,14 +20,11 @@ import urlparse
 
 _queue = Queue(1000000)
 _size = 0
-_proxy_list = []
 webdriver_list = []
 
-def phantomjs_spider_init(poolsize, proxy_list=None):
+def phantomjs_spider_init(poolsize):
     print datetime.datetime.now(), "[PhantomJSSpider]:init...."
-    global _size, _queue, _url_max_num, _proxy_list
-    if proxy_list:
-        _proxy_list = proxy_list
+    global _size, _queue, _url_max_num
     if _size == 0:
         _size = poolsize
 
@@ -61,7 +58,7 @@ def phantomjs_spider_join():
             _.kill()
 
 
-class WkSpider(object):
+class PhantomjsSpider(object):
     _url_buff = set()
     def __init__(self, url, charset=None,headers=None, response_handle=None, timeout=3, retry_times=30, load_wait=None,
                  execute_js=None, execute_js_wait=None,
@@ -95,8 +92,8 @@ class WkSpider(object):
         self.load_wait = load_wait
         self.proxy = http_proxy_url
         if not force:
-            if _hash not in WkSpider._url_buff:
-                WkSpider._url_buff.add(_hash)
+            if _hash not in PhantomjsSpider._url_buff:
+                PhantomjsSpider._url_buff.add(_hash)
                 _queue.put(self._go)
         else:
             _queue.put(self._go)
