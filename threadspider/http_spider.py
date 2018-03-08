@@ -11,6 +11,7 @@ import datetime
 from utils.encrypt import md5
 import  urlparse
 from pybloom import  BloomFilter,ScalableBloomFilter
+import  traceback
 
 _queue = Queue()
 _size = 0
