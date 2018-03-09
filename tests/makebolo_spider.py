@@ -55,12 +55,14 @@ def get_detail_handle(url):
         print "write mongo"
         for i in doc("a"):
             href = pyquery.PyQuery(i).attr("href")
-            if href and  "huangye88.com"  in href:
-                if re.search(r"/xinxi/\d+\.html.*?",href):
+            if href and  "makepolo.com"  in href:
+                if re.search(r"makepolo.com/product-detail/\d+\.html.*?",href):
+                    href = href.split("?")[0]
                     Spider(href,headers=req,response_handle=get_detail_handle(href),retry_times=3)
                 else:
-                    if "b2b.huangye88.com" in href:
-                        Spider(href,headers=req,response_handle=res_handle,retry_times=3)
+
+                    href = href.split("?")[0]
+                    Spider(href,headers=req,response_handle=res_handle,retry_times=3)
     return  detail_handle
 
 Spider("http://china.makepolo.com/",response_handle=res_handle,headers=req,retry_times=3)
