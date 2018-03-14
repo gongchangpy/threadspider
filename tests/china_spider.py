@@ -30,7 +30,7 @@ def res_handle(res):
         if href and  "site.china.cn"  in href:
             if re.search(r"site.china.cn/[a-z]+/\d+\.html.*?",href):
                 href = href.split("?")[0]
-                Spider(href,headers=req,response_handle=get_detail_handle(href),retry_times=3,charset="gbk")
+                Spider(href,headers=req,response_handle=get_detail_handle(href),retry_times=3,charset="gbk",priority=3)
             else:
 
                 href = href.split("?")[0]
@@ -50,7 +50,7 @@ def get_detail_handle(url):
             if href and  "site.china.cn"  in href:
                 if re.search(r"site.china.cn/[a-z]+/\d+\.html.*?",href):
                     href = href.split("?")[0]
-                    Spider(href,headers=req,response_handle=get_detail_handle(href),retry_times=3,charset="gbk")
+                    Spider(href,headers=req,response_handle=get_detail_handle(href),retry_times=3,charset="gbk",priority=3)
                 else:
 
                     href = href.split("?")[0]

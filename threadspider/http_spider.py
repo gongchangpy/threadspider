@@ -3,7 +3,7 @@ __author__ = 'admin'
 # --------------------------------
 # Created by admin  on 2016/8/25.
 # ---------------------------------
-from Queue import Queue
+from utils.queue import PriorityQueue as Queue
 from threading import Thread
 import urllib2
 import time
@@ -11,22 +11,25 @@ import datetime
 from utils.encrypt import md5
 import  urlparse
 from pybloom import  BloomFilter,ScalableBloomFilter
-import  traceback
+
 
 _queue = Queue()
 _size = 0
 
 
-def spider_init(poolsize):
+def spider_init(pool_size):
+    '''初始化爬虫
+    pool_size 线程池的大小
+    '''
     print datetime.datetime.now(), "[Spider]:init...."
     global _size, _queue, _url_max_num, _proxy_list
     if _size == 0:
-        _size = poolsize
+        _size = pool_size
 
         def run():
             def work():
                 while 1:
-                    fun = _queue.get()
+                    fun = _queue.get().obj
                     if fun:
                         fun()
                     _queue.task_done()
@@ -40,27 +43,23 @@ def spider_init(poolsize):
 
 
 def spider_join():
+    '''
+    等待爬虫执行完成
+    '''
     global _queue
     _queue.join()
 
 
-def urllib2_get_httpproxy(ip, port):
-    proxy = urllib2.ProxyHandler({'http': 'http://%s:%s' % (ip, port)})
-    opener = urllib2.build_opener(proxy)
-    return opener, "http", ip, port
 
 
-def urllib2_get_httpsproxy(ip, port):
-    proxy = urllib2.ProxyHandler({'https': 'https://%s:%s' % (ip, port)})
-    opener = urllib2.build_opener(proxy)
-    return opener, "https", ip, port
+
 
 
 class Spider(object):
     _url_buff = None
 
     def __init__(self, url, charset=None, data=None, headers=None, response_handle=None, timeout=3, retry_times=30,
-                 retry_delta=3, http_proxy_url=None, force=False):
+                 retry_delta=3, http_proxy_url=None, force=False,priority=0):
         '''
             url   目标url
             charset   编码
@@ -72,6 +71,7 @@ class Spider(object):
             retry_delta   重试间隔,int
             http_proxy_url         代理ip,  "http://192.168.1.1:80"
             force         强制爬取,而不管有没有爬取过.
+            priority      优先级,默认为0, 高优先级的会被优先爬取
         '''
         self.url = url
         self.data = data
@@ -82,6 +82,7 @@ class Spider(object):
         self.charset = charset
         self.headers = headers
         self.proxy = http_proxy_url
+        self.priority = priority
         if not Spider._url_buff:
             Spider._url_buff = [BloomFilter(1000000)]
         global _queue
@@ -101,11 +102,15 @@ class Spider(object):
                 except:
                     Spider._url_buff.append(BloomFilter(Spider._url_buff[-1].capacity+1000000))
                     Spider._url_buff[-1].add(_hash)
-                _queue.put(self._go)
+                _queue.put_priority(self._go,priority)
         else:
-            _queue.put(self._go)
+            _queue.put_priority(self._go,priority)
 
     def _go(self):
+        def urllib2_get_httpproxy(ip, port):
+            proxy = urllib2.ProxyHandler({'http': 'http://%s:%s' % (ip, port)})
+            opener = urllib2.build_opener(proxy)
+            return opener, "http", ip, port
         retry_times = self.retry_times
         url = self.url
         postdata = self.data
@@ -116,17 +121,7 @@ class Spider(object):
                 if self.proxy:
                     proxy_info = urlparse.urlparse(self.proxy)
                     proxy_hostname = proxy_info.hostname
-                    if proxy_info.scheme == "http":
-                        if not proxy_info.port:
-                            proxy_port = 80
-                        else:
-                            proxy_port = int(proxy_info.port)
-                    else:
-                        if not proxy_info.port:
-                            proxy_port = 443
-                        else:
-                            proxy_port = int(proxy_info.port)
-                    proxy = urllib2_get_httpsproxy(proxy_hostname,proxy_port)
+                    proxy = urllib2_get_httpproxy(proxy_hostname,80)
                     urllib2.install_opener(proxy)
                 request = urllib2.Request(url)
                 if self.headers:
