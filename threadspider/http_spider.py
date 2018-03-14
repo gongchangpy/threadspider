@@ -21,6 +21,7 @@ _handle = None
 def spider_init(pool_size,handle = lambda url,content:None):
     '''初始化爬虫
     pool_size 线程池的大小
+    handle    爬虫结果回调函数, 函数必须包含两个参数, 第一个参数是url,第二个参数是爬取到的结果
     '''
     print datetime.datetime.now(), "[Spider]:init...."
     global _size, _queue, _url_max_num, _proxy_list,_handle
