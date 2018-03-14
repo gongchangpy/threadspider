@@ -2,12 +2,11 @@
 <project version="4">
   <component name="WebServers">
     <option name="servers">
-      <webServer id="c0c6365b-aee0-4377-b89d-4c38552f34e5" name="192.168.15.34" url="http://192.168.15.34">
-        <fileTransfer host="192.168.15.34" port="2828" rootFolder="/data/pycharm" accessType="SFTP">
+      <webServer id="c0c6365b-aee0-4377-b89d-4c38552f34e5" name="192.168.8.137" url="http://192.168.8.137">
+        <fileTransfer host="192.168.8.137" port="2828" rootFolder="/data/pycharm" accessType="SFTP" username="root">
           <advancedOptions>
             <advancedOptions dataProtectionLevel="Private" />
           </advancedOptions>
-          <option name="port" value="2828" />
         </fileTransfer>
       </webServer>
     </option>

@@ -15,25 +15,25 @@ from pybloom import  BloomFilter,ScalableBloomFilter
 
 _queue = Queue()
 _size = 0
+_handle = None
 
 
-def spider_init(pool_size):
+def spider_init(pool_size,handle = lambda url,content:None):
     '''初始化爬虫
     pool_size 线程池的大小
     '''
     print datetime.datetime.now(), "[Spider]:init...."
-    global _size, _queue, _url_max_num, _proxy_list
-    if _size == 0:
+    global _size, _queue, _url_max_num, _proxy_list,_handle
+    if _size == 0 and _handle ==None:
         _size = pool_size
-
+        _handle = handle
         def run():
             def work():
                 while 1:
-                    fun = _queue.get().obj
-                    if fun:
-                        fun()
+                    kwargs = _queue.get().obj
+                    if kwargs:
+                        Spider(**kwargs).go()
                     _queue.task_done()
-
             for i in range(0, _size):
                 thread = Thread(target=work)
                 thread.setDaemon(True)
@@ -58,18 +58,17 @@ def spider_join():
 class Spider(object):
     _url_buff = None
 
-    def __init__(self, url, charset=None, data=None, headers=None, response_handle=None, timeout=3, retry_times=30,
-                 retry_delta=3, http_proxy_url=None, force=False,priority=0):
+    def __init__(self, url, charset=None, data=None, headers=None,  timeout=3, retry_times=30,
+                 retry_delta=3, http_proxy=None, force=False,priority=0):
         '''
             url   目标url
             charset   编码
             data   post的数据,字符串
             headers  自定义请求头,dict
-            response_handle 采集结果处理函数
             timeout  超时时间,int,  比如:3
             retry_times 重试次数,int,比如3
             retry_delta   重试间隔,int
-            http_proxy_url         代理ip,  "http://192.168.1.1:80"
+            http_proxy         代理ip, 192.168.1.1
             force         强制爬取,而不管有没有爬取过.
             priority      优先级,默认为0, 高优先级的会被优先爬取
         '''
@@ -78,10 +77,9 @@ class Spider(object):
         self.timeout = timeout
         self.retry_times = retry_times
         self.retry_delta = retry_delta
-        self.response_handle = response_handle
         self.charset = charset
         self.headers = headers
-        self.proxy = http_proxy_url
+        self.http_proxy = http_proxy
         self.priority = priority
         if not Spider._url_buff:
             Spider._url_buff = [BloomFilter(1000000)]
@@ -102,11 +100,12 @@ class Spider(object):
                 except:
                     Spider._url_buff.append(BloomFilter(Spider._url_buff[-1].capacity+1000000))
                     Spider._url_buff[-1].add(_hash)
-                _queue.put_priority(self._go,priority)
+                _queue.put_priority(self.__dict__,priority)
         else:
-            _queue.put_priority(self._go,priority)
+            _queue.put_priority(self.__dict__,priority)
 
-    def _go(self):
+    def go(self):
+        global  _handle
         def urllib2_get_httpproxy(ip, port):
             proxy = urllib2.ProxyHandler({'http': 'http://%s:%s' % (ip, port)})
             opener = urllib2.build_opener(proxy)
@@ -118,10 +117,8 @@ class Spider(object):
         retry_delta = self.retry_delta
         for i in range(0, retry_times):
             try:
-                if self.proxy:
-                    proxy_info = urlparse.urlparse(self.proxy)
-                    proxy_hostname = proxy_info.hostname
-                    proxy = urllib2_get_httpproxy(proxy_hostname,80)
+                if self.http_proxy:
+                    proxy = urllib2_get_httpproxy(self.http_proxy,80)
                     urllib2.install_opener(proxy)
                 request = urllib2.Request(url)
                 if self.headers:
@@ -137,8 +134,9 @@ class Spider(object):
                     response = urllib2.urlopen(request, data=postdata, timeout=timeout)
                     data = response.read()
                     headers = response.info().dict
-                if self.response_handle:
-                    self.response_handle(data)
+                # if self.response_handle:
+                #    self.response_handle(data)
+                _handle(self.url,data)
             except Exception as e:
                 print datetime.datetime.now(), "[Spider]:%s Exception:%s" % (url, e)
                 time.sleep(retry_delta)
