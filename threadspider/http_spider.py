@@ -11,6 +11,7 @@ import datetime
 from utils.encrypt import md5
 import  urlparse
 from pybloom import  BloomFilter,ScalableBloomFilter
+import  traceback
 
 
 _queue = Queue()
@@ -60,7 +61,7 @@ class Spider(object):
     _url_buff = None
 
     def __init__(self, url, charset=None, data=None, headers=None,  timeout=3, retry_times=30,
-                 retry_delta=3, http_proxy=None, force=False,priority=0):
+                 retry_delta=3, http_proxy=None, force=False):
         '''
             url   目标url
             charset   编码
@@ -71,7 +72,6 @@ class Spider(object):
             retry_delta   重试间隔,int
             http_proxy         代理ip, 192.168.1.1
             force         强制爬取,而不管有没有爬取过.
-            priority      优先级,默认为0, 高优先级的会被优先爬取
         '''
         self.url = url
         self.data = data
@@ -81,7 +81,6 @@ class Spider(object):
         self.charset = charset
         self.headers = headers
         self.http_proxy = http_proxy
-        self.priority = priority
         if not Spider._url_buff:
             Spider._url_buff = [BloomFilter(1000000)]
         global _queue
@@ -101,9 +100,9 @@ class Spider(object):
                 except:
                     Spider._url_buff.append(BloomFilter(Spider._url_buff[-1].capacity+1000000))
                     Spider._url_buff[-1].add(_hash)
-                _queue.put_priority(self.__dict__,priority)
+                _queue.put_priority(self.__dict__,0)
         else:
-            _queue.put_priority(self.__dict__,priority)
+            _queue.put_priority(self.__dict__,0)
 
     def go(self):
         global  _handle
@@ -123,22 +122,21 @@ class Spider(object):
                     urllib2.install_opener(proxy)
                 request = urllib2.Request(url)
                 if self.headers:
-                    request.headers = self.headers
+                    pass
                 else:
-                    request.headers = {"User-Agent": 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36\
-(KHTML, like Gecko) Chrome/63.0.3239.132 Mobile Safari/537.36'}
+                    self.headers = {"User-Agent": 'Mozilla/5.0 (Linux; Android 6.0; Nexus 5 Build/MRA58N) AppleWebKit/537.36\
+                        (KHTML, like Gecko) Chrome/63.0.3239.132 Mobile Safari/537.36'}
+                for k,l in self.headers.items():
+                    request.add_header(k,l)
                 if self.charset:
                     response = urllib2.urlopen(request, data=postdata, timeout=timeout)
                     data = response.read().decode(self.charset, errors="ignore")
-                    headers = response.info().dict
                 else:
                     response = urllib2.urlopen(request, data=postdata, timeout=timeout)
                     data = response.read()
-                    headers = response.info().dict
-                # if self.response_handle:
-                #    self.response_handle(data)
                 _handle(self.url,data)
             except Exception as e:
+                traceback.print_exc()
                 print datetime.datetime.now(), "[Spider]:%s Exception:%s" % (url, e)
                 time.sleep(retry_delta)
             else:
