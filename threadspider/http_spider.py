@@ -118,7 +118,7 @@ class Spider(object):
         for i in range(0, retry_times):
             try:
                 if self.http_proxy:
-                    if self.http_proxy.hasattr("__call__"):
+                    if hasattr(self.http_proxy,"__call__"):
                         self.http_proxy = self.http_proxy()
                 else:
                     pass

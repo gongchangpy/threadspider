@@ -7,6 +7,6 @@ from setuptools import  setup,find_packages
 setup(
     name="threadspider",
     packages=["threadspider","threadspider.utils","threadspider.utils.tests"],
-    version='0.3.3',
+    version='0.3.4',
     install_requires=["setuptools","psutil","selenium","pybloom","pyquery"],
 )
