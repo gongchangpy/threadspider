@@ -70,7 +70,7 @@ class Spider(object):
             timeout  超时时间,int,  比如:3
             retry_times 重试次数,int,比如3
             retry_delta   重试间隔,int
-            http_proxy         代理ip, 192.168.1.1
+            http_proxy         代理ip, 比如 192.168.1.1:3128  ，也可以是一个函数 lambda :"192.168.1.1:3128"
             force         强制爬取,而不管有没有爬取过.
         '''
         self.url = url
@@ -118,9 +118,13 @@ class Spider(object):
         for i in range(0, retry_times):
             try:
                 if self.http_proxy:
-                    proxy = urllib2_get_httpproxy(self.http_proxy,80)
-                    urllib2.install_opener(proxy)
+                    if self.http_proxy.hasattr("__call__"):
+                        self.http_proxy = self.http_proxy()
+                else:
+                    pass
                 request = urllib2.Request(url)
+                if self.http_proxy:
+                    request.set_proxy(self.http_proxy,"http")
                 if self.headers:
                     pass
                 else:
